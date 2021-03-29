@@ -1,0 +1,340 @@
+<html>
+<head>
+<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+<style>
+	input{
+	 padding:5px;
+	 margin:5px;
+	 
+	}
+	
+	table{
+		border-collapse:collapse;
+	}
+	
+	th, td{
+		border:1px solid grey;
+		padding:5px;
+	}
+	
+	button{ padding:5px; margin:5px;}
+</style>
+	
+</head>
+<body>
+	<div style="width:45%;float:left;minHeight:200px" id="root"></div>
+	<div style="width:45%;float:left;minHeight:200px" id="stubin"></div>
+	<div id="showMessage"></div>
+</body>
+
+</html>
+
+
+<script type="text/babel">
+	
+	class Title extends React.Component {
+		render() {
+			return (<h1>Welecome to MSIT Mr/Ms. {this.props.x}</h1>);
+		}
+	}
+	
+	class StudentsRecycleBin extends React.Component {
+		constructor(props){
+			super(props);
+			this.state = {cur_index:-1, prev_index:-1};
+			this.cached = [];			
+		}
+		
+		render() {
+			if(this.state.cur_index>=0 && this.state.cur_index!=this.state.prev_index){
+				this.cached.push(JSON.parse(this.props.stu));
+			}
+			
+			return (
+				<div>
+					<h1>Total Students (RecycleBin){this.cached.length}</h1>
+					<div style={{margin:'10px', border:"1px solid black", padding:"10px", margin:"10px", minHeight:"200px"}}>
+						<table>
+							<thead><tr><th>Name</th><th>Roll No</th><th>Mobile</th><th>Action</th></tr></thead>							
+							<tbody>
+							{
+							this.cached.map((stu, index) => 
+								<tr key={index}>
+									<td>{stu.name}</td><td>{stu.rollno}</td><td>{stu.mobile}</td>
+									<td><button  onClick={()=> this.remove(stu, index)}>Remove</button> &nbsp; &nbsp; <button  onClick={()=> this.restore(index)}>Restore</button></td>
+								</tr> 
+								)
+							}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			);
+		}
+		
+		
+		remove = (index) => {
+			this.cached.splice(index,1);
+		}
+		
+		restore = (index) => {	
+			this.cached.splice(index,1);
+			console.log("after splice : ");
+			console.log(this.cached);
+			this.setState({cur_index:-1});
+			//write your code to add stu to Student Component using props
+		}
+		
+		getSnapshotBeforeUpdate(prevProps, prevState) {
+			if(prevProps.index!=this.props.index){
+				this.setState({cur_index:this.props.index});
+			}
+			return null;
+		}
+		
+		componentDidUpdate(){
+			
+		}
+		
+		componentDidMount(){
+			this.setState({cur_index:this.props.index});
+		}
+	}
+	
+	class Student extends React.Component {
+		constructor(props){
+			super(props);
+			this.state = {students:[], name:'', rollno:'', mobile:'',index:-1};
+			this.cached = [];
+		}
+		
+		render() {
+			return (
+				<div>
+					<h1>Total Students {this.state.students.length}</h1>
+					<div style={{margin:'10px', border:"1px solid black", padding:"10px", margin:"10px", minHeight:"200px"}}>
+						<input type="text" onChange={this.setStateValue} name="name" style={{width:"100%"}} placeholder="Your Name" value={this.state.name}/><br/>
+						<input type="text" onChange={this.setStateValue} name="rollno" style={{width:"100%"}}  placeholder="RollNo" value={this.state.rollno}/><br/>
+						<input type="text" onChange={this.setStateValue} name="mobile" style={{width:"100%"}}  placeholder="Mobile" value={this.state.mobile}/><br/>
+						<button onClick={this.add} style={{width:"20%", background:"green", padding:"10px", border:"1px solid green", color:"white"}} >Add </button>
+						<button onClick={this.update} style={{width:"20%", background:"green", padding:"10px", border:"1px solid green", color:"white"}} >Update </button>
+						<table>
+							<thead><tr><th>Name</th><th>Roll No</th><th>Mobile</th><th>Action</th></tr></thead>							
+							<tbody>
+							{
+							this.state.students.map((stu, index) => 
+								<tr key={index}>
+									<td>{stu.name}</td><td>{stu.rollno}</td><td>{stu.mobile}</td>
+									<td><button  onClick={()=> this.edit(stu, index)}>Edit</button> &nbsp; &nbsp; <button  onClick={()=> this.remove(index)}>Remove</button></td>
+								</tr> 
+								)
+							}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			);
+		}
+		
+		setStateValue = (ele) =>{
+			this.setState({[ele.target.name]:ele.target.value});
+		}
+		
+		add = () => {	
+			if(this.state.name==""){
+				return;
+			}
+			const stu = {name:this.state.name, rollno:this.state.rollno, mobile:this.state.mobile};
+			this.setState({students:[...this.state.students,stu]});
+			this.setState({name:'',rollno:'', mobile:''});
+		}
+		
+		remove = (index) => {
+			const stu = JSON.stringify(this.state.students[index]);
+			const students = this.state.students;
+			students.splice(index,1);
+			this.setState({students:students});			
+			ReactDOM.render(<StudentsRecycleBin index={index} stu={stu}/>, document.getElementById("stubin"));
+		}
+		
+		edit = (st, index) => {
+			this.setState({name:st.name,rollno:st.rollno, mobile:st.mobile, index:index});
+		}
+		
+		update = () => {
+			const index = this.state.index;
+			const students = this.state.students;
+			if(index>=0){
+				students[index] = {name:this.state.name, rollno:this.state.rollno, mobile:this.state.mobile, index:-1};
+				this.setState({students:students});
+			}
+		}
+		
+		getStudents = () => {
+			fetch('https://raw.githubusercontent.com/satyawin007/msittest/master/students.json') 
+			.then(resp => resp.json())
+			.then(data => {
+				console.log(data);
+				this.setState({students:data});
+			});
+		}
+		
+		componentDidMount(){
+			this.getStudents();
+			
+			/*
+			const students = localStorage.getItem("students");
+			if(students!=null){
+				this.setState({students:JSON.parse(students)});
+			}
+
+			window.addEventListener("beforeunload", ()=>{
+				localStorage.setItem("students",JSON.stringify(this.state.students));
+			});
+			
+			this.test(5);
+			*/
+		}
+		
+		test = (index) => { alert("test "+index); }
+		
+		componentWillUnmount(){
+		}
+	}
+	
+	
+
+	class Course extends React.Component {
+		constructor(props){
+			super(props);
+			this.state = {courses:[], name:'', description:''};
+		}
+		
+		render() {
+			return (
+				<div>
+				<h1>Total Courses {this.state.courses.length}</h1>
+				<div style={{margin:'10px', border:"1px solid black", padding:"10px", margin:"10px", minHeight:"200px"}}>
+					<input type="text" onChange={this.setStateValue} name="name" style={{width:"100%"}} placeholder="Your Name" value={this.state.name}/><br/>
+					<textarea onChange={this.setStateValue} name="description" style={{width:"100%"}}  placeholder="description" value={this.state.description}></textarea><br/>
+					<button onClick={this.add} style={{width:"20%", background:"green", padding:"10px", border:"1px solid green", color:"white"}} >Add </button>
+					<table>
+						<thead><tr><th>Name</th><th>description</th></tr></thead>
+						<tbody>
+							{
+								this.state.courses.map((course, index) => 
+									<tr key={index}><td>{course.name}</td><td>{course.description}</td></tr>
+								)
+							}
+						</tbody>
+					</table>
+				</div>
+				</div>
+			);
+		}
+		
+		setStateValue = (ele) =>{
+			if(ele.target.name=="name"){
+				this.setState({name:ele.target.value});
+			}
+			if(ele.target.name=="description"){
+				this.setState({description:ele.target.value});
+			}	
+		}
+		
+		add = () => {		
+			if(this.state.name==""){
+				return;
+			}
+			const course = {name:this.state.name, description:this.state.description};
+			this.setState({courses:[...this.state.courses,course]});
+			this.setState({name:'', description:''});
+			
+		}
+	}
+	
+	class App extends React.Component {
+		render() {
+			return (
+				<div>
+					<div >
+						<Student />
+					</div>					
+				</div>
+			);
+		}
+	}
+	
+	class Container extends React.Component {
+	  constructor(props) {
+		super(props);
+		this.state = {show: true};
+	  }
+	  
+	  delHeader = () => {
+		this.setState({show: false});
+	  }
+	  
+	  render() {
+		let myheader;
+		if (this.state.show) {
+		  myheader = <Child />;
+		};
+		return (
+		  <div>
+		  {myheader}
+		  <button type="button" onClick={this.delHeader}>Delete Header</button>
+		  </div>
+		);
+	  }
+	}
+	
+	class Child extends React.Component {
+	  componentWillUnmount() {
+		alert("The component named Header is about to be unmounted.");
+	  }
+	  render() {
+		return (
+		  <h1>Hello World!</h1>
+		);
+	  }
+	}
+
+	class Header extends React.Component {
+	  constructor(props) {
+		super(props);
+		this.state = {favoritecolor: "red"};
+	  }
+	  componentDidMount() {
+		setTimeout(() => {
+		  this.setState({favoritecolor: "yellow"})
+		}, 1000);
+	  }
+	  
+	  changeColor = () =>{
+		this.setState({favoritecolor:"Blue"});
+	  }
+	  
+	  shouldComponentUpdate() {
+		return true;
+	  }
+	  
+	  componentWillUnmount(){
+		alert("Im closed");
+	  }
+	  
+	  render() {
+		return (
+		  <div>
+			<h1>My Favorite Color is {this.state.favoritecolor}</h1>
+			<button onClick={this.changeColor}>Change Color</button>
+		  </div>
+		);
+	  }
+	}
+	
+	ReactDOM.render(<App />, document.getElementById("root"));	
+</script>
